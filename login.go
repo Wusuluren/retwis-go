@@ -3,7 +3,6 @@ package retwis
 import (
 	"github.com/gin-gonic/gin"
 	"time"
-	"net/http"
 )
 
 func LoginHandle(c *gin.Context) {
@@ -32,6 +31,6 @@ func LoginHandle(c *gin.Context) {
 
 	// Username / password OK, set the cookie and redirect to index
 	authsecret, _ := r.Hget("user:"+userid, "auth")
-	setcookie(c, "auth", authsecret, int(time.Now().Unix() + 3600*24*365))
-	c.Redirect(http.StatusTemporaryRedirect, "index")
+	setcookie(c, "auth", authsecret, int(time.Now().Unix()+3600*24*365))
+	tempRedirect(c, "index")
 }

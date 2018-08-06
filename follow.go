@@ -1,12 +1,11 @@
 package retwis
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"net/url"
 	"strconv"
 	"time"
-	"fmt"
-	"net/url"
 )
 
 func FollowHandle(c *gin.Context) {
@@ -14,20 +13,21 @@ func FollowHandle(c *gin.Context) {
 	username, _ := r.Hget("user:"+gt(c, "uid"), "username")
 	if !isLoggedIn(c) || gt(c, "uid") == "" || gt(c, "f") == "" ||
 		username == "" {
-		c.Redirect(http.StatusTemporaryRedirect, "index")
+		tempRedirect(c, "index")
 		return
 	}
 
 	f, _ := strconv.Atoi(gt(c, "f"))
 	uid := gt(c, "uid")
-	if uid != User["id"] {
+	userid := User.Get(c, "id")
+	if uid != userid {
 		if f != 0 {
-			r.Zadd("followers:"+uid, time.Now().Unix(), User["id"])
-			r.Zadd("following:"+User["id"], time.Now().Unix(), uid)
+			r.Zadd("followers:"+uid, time.Now().Unix(), userid)
+			r.Zadd("following:"+userid, time.Now().Unix(), uid)
 		} else {
-			r.Zrem("followers:"+uid, User["id"])
-			r.Zrem("following:"+User["id"], uid)
+			r.Zrem("followers:"+uid, userid)
+			r.Zrem("following:"+userid, uid)
 		}
 	}
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("profile?u=%s", url.PathEscape(username)))
+	tempRedirect(c, fmt.Sprintf("profile?u=%s", url.PathEscape(username)))
 }

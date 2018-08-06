@@ -1,20 +1,20 @@
 package retwis
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
 	"fmt"
+	"github.com/gin-gonic/gin"
 )
 
 func HomeHandle(c *gin.Context) {
 	if !isLoggedIn(c) {
-		c.Redirect(http.StatusOK, "index")
+		tempRedirect(c, "index")
 		return
 	}
 
 	r, _ := redisLink()
-	followers, _ := r.Zcard("followers:"+User["id"])
-	following, _ := r.Zcard("following:"+User["id"])
+	userid := User.Get(c, "id")
+	followers, _ := r.Zcard("followers:" + userid)
+	following, _ := r.Zcard("following:" + userid)
 	body := fmt.Sprintf(`<div id="postform">
 <form method="POST" action="post">
 %s, what you are doing?
@@ -29,13 +29,13 @@ func HomeHandle(c *gin.Context) {
 %s following<br>
 </div>
 </div>
-`, User["username"], followers, following)
+`, User.Get(c, "username"), followers, following)
 	var start int
 	if gt(c, "start") == "" {
 		start = 0
 	} else {
 		start = stringToInt(gt(c, "start"))
 	}
-	showUserPostsWithPagination(c, User["username"], User["id"], start, 10)
+	showUserPostsWithPagination(c, User.Get(c, "username"), userid, start, 10)
 	renderBody(c, body)
 }

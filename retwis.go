@@ -1,16 +1,14 @@
 package retwis
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/garyburd/redigo/redis"
-	"strings"
 	"fmt"
-	"time"
+	"github.com/garyburd/redigo/redis"
+	"github.com/gin-gonic/gin"
 	"math/rand"
 	"net/url"
+	"strings"
+	"time"
 )
-
-var User map[string]string
 
 func getrand() int {
 	rand.Seed(time.Now().Unix())
@@ -19,7 +17,7 @@ func getrand() int {
 }
 
 func isLoggedIn(c *gin.Context) bool {
-	if User != nil {
+	if User.IsSet(c) {
 		return true
 	}
 
@@ -31,21 +29,21 @@ func isLoggedIn(c *gin.Context) bool {
 					return false
 				}
 			}
-			loadUserInfo(userid)
+			loadUserInfo(c, userid)
 			return true
 		}
 	}
 	return false
 }
 
-func loadUserInfo(userid string) bool {
+func loadUserInfo(c *gin.Context, userid string) bool {
 	r, _ := redisLink()
-	if User == nil {
-		User = make(map[string]string)
+	if !User.IsSet(c) {
+		User.Init(c)
 	}
-	User["id"] = userid
-	if username, err := r.Hget("user:"+userid, "name"); err == nil {
-		User["username"] = username
+	User.Set(c, "id", userid)
+	if username, err := r.Hget("user:"+userid, "username"); err == nil {
+		User.Set(c, "username", username)
 	}
 	return true
 }
@@ -117,7 +115,7 @@ func parsePost(post map[string]string) string {
 
 func showPost(c *gin.Context, id string) bool {
 	r, _ := redisLink()
-	post, _ := r.Hgetall("post:"+id)
+	post, _ := r.Hgetall("post:" + id)
 	if len(post) == 0 {
 		return false
 	}
@@ -141,9 +139,9 @@ func showUserPosts(c *gin.Context, userid string, start, count int) bool {
 	if userid == "-1" {
 		key = "timeline"
 	} else {
-		key = "posts:"+userid
+		key = "posts:" + userid
 	}
-	posts, _ := r.Lrange(key, start, start + count)
+	posts, _ := r.Lrange(key, start, start+count)
 	ctr := 0
 	for _, p := range posts {
 		if showPost(c, string(p.([]uint8))) {
@@ -153,7 +151,7 @@ func showUserPosts(c *gin.Context, userid string, start, count int) bool {
 			break
 		}
 	}
-	return len(posts) == count + 1
+	return len(posts) == count+1
 }
 
 func showUserPostsWithPagination(c *gin.Context, username, userid string, start, count int) {
