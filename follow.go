@@ -10,7 +10,7 @@ import (
 
 func FollowHandle(c *gin.Context) {
 	r, _ := redisLink()
-	username, _ := r.Hget("user:"+gt(c, "uid"), "username")
+	username, _ := r.HGet("user:"+gt(c, "uid"), "username")
 	if !isLoggedIn(c) || gt(c, "uid") == "" || gt(c, "f") == "" ||
 		username == "" {
 		tempRedirect(c, "index")
@@ -22,11 +22,11 @@ func FollowHandle(c *gin.Context) {
 	userid := User.Get(c, "id")
 	if uid != userid {
 		if f != 0 {
-			r.Zadd("followers:"+uid, time.Now().Unix(), userid)
-			r.Zadd("following:"+userid, time.Now().Unix(), uid)
+			r.ZAdd("followers:"+uid, time.Now().Unix(), userid)
+			r.ZAdd("following:"+userid, time.Now().Unix(), uid)
 		} else {
-			r.Zrem("followers:"+uid, userid)
-			r.Zrem("following:"+userid, uid)
+			r.ZRem("followers:"+uid, userid)
+			r.ZRem("following:"+userid, uid)
 		}
 	}
 	tempRedirect(c, fmt.Sprintf("profile?u=%s", url.PathEscape(username)))

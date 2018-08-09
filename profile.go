@@ -10,14 +10,14 @@ func ProfileHandle(c *gin.Context) {
 	c.Writer.WriteString(generateHeader(c))
 
 	r, _ := redisLink()
-	userid, _ := r.Hget("users", gt(c, "u"))
+	userid, _ := r.HGet("users", gt(c, "u"))
 	if gt(c, "u") == "" || userid == "" {
 		tempRedirect(c, "index")
 		return
 	}
 	c.Writer.WriteString(fmt.Sprintf(`<h2 class="username">%s</h2>`, gt(c, "u")))
 	if isLoggedIn(c) && User.Get(c, "id") != userid {
-		isfollowing, _ := r.Zscore("following:"+User.Get(c, "id"), userid)
+		isfollowing, _ := r.ZScore("following:"+User.Get(c, "id"), userid)
 		if isfollowing == 0 {
 			c.Writer.WriteString(fmt.Sprintf(`<a href="follow?uid=%s&f=1" class="button">Follow this user</a>`, userid))
 		} else {

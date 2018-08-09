@@ -17,20 +17,20 @@ func LoginHandle(c *gin.Context) {
 	password := gt(c, "password")
 	r, _ := redisLink()
 	var userid string
-	if user_id, err := r.Hget("users", username); err != nil || user_id == "" {
+	if user_id, err := r.HGet("users", username); err != nil || user_id == "" {
 		goback(c, "Wrong username or password")
 		return
 	} else {
 		userid = user_id
 	}
-	realpassword, _ := r.Hget("user:"+userid, "password")
+	realpassword, _ := r.HGet("user:"+userid, "password")
 	if realpassword != password {
 		goback(c, "Wrong username or password")
 		return
 	}
 
 	// Username / password OK, set the cookie and redirect to index
-	authsecret, _ := r.Hget("user:"+userid, "auth")
+	authsecret, _ := r.HGet("user:"+userid, "auth")
 	setcookie(c, "auth", authsecret, int(time.Now().Unix()+3600*24*365))
 	tempRedirect(c, "index")
 }

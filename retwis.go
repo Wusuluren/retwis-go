@@ -23,8 +23,8 @@ func isLoggedIn(c *gin.Context) bool {
 
 	if authcookie, err := c.Cookie("auth"); err == nil {
 		r, _ := redisLink()
-		if userid, err := r.Hget("auths", authcookie); err == nil {
-			if authedcookie, err := r.Hget("user:"+userid, "auth"); err == nil {
+		if userid, err := r.HGet("auths", authcookie); err == nil {
+			if authedcookie, err := r.HGet("user:"+userid, "auth"); err == nil {
 				if authedcookie != authcookie {
 					return false
 				}
@@ -42,14 +42,14 @@ func loadUserInfo(c *gin.Context, userid string) bool {
 		User.Init(c)
 	}
 	User.Set(c, "id", userid)
-	if username, err := r.Hget("user:"+userid, "username"); err == nil {
+	if username, err := r.HGet("user:"+userid, "username"); err == nil {
 		User.Set(c, "username", username)
 	}
 	return true
 }
 
-func redisLink() (Redis, error) {
-	r := Redis{}
+func redisLink() (*Redis, error) {
+	r := &Redis{}
 	conn, err := redis.Dial("tcp", "192.168.116.129:6379")
 	r.Conn = conn
 	return r, err
@@ -115,13 +115,13 @@ func parsePost(post map[string]string) string {
 
 func showPost(c *gin.Context, id string) bool {
 	r, _ := redisLink()
-	post, _ := r.Hgetall("post:" + id)
+	post, _ := r.HGetAll("post:" + id)
 	if len(post) == 0 {
 		return false
 	}
 
 	userid := post["user_id"]
-	username, _ := r.Hget("user:"+userid, "username")
+	username, _ := r.HGet("user:"+userid, "username")
 	elapsed := post["time"]
 	userlink := fmt.Sprintf(`<a class="%s" href="profile?u=%s">%s</a>`,
 		username, url.PathEscape(username), username)
@@ -141,10 +141,10 @@ func showUserPosts(c *gin.Context, userid string, start, count int) bool {
 	} else {
 		key = "posts:" + userid
 	}
-	posts, _ := r.Lrange(key, start, start+count)
+	posts, _ := r.LRange(key, start, start+count)
 	ctr := 0
 	for _, p := range posts {
-		if showPost(c, string(p.([]uint8))) {
+		if showPost(c, p) {
 			ctr++
 		}
 		if ctr == count {
@@ -190,11 +190,11 @@ func showUserPostsWithPagination(c *gin.Context, username, userid string, start,
 func showLastUsers(c *gin.Context) string {
 	var content string
 	r, _ := redisLink()
-	users, _ := r.Zrevrange("users_by_time", 0, 9)
+	users, _ := r.ZRevRange("users_by_time", 0, 9)
 	c.Writer.WriteString("<div>")
 	for _, u := range users {
 		c.Writer.WriteString(fmt.Sprintf(`<a class="username" href="profile?u=%s">%s</a>`,
-			url.PathEscape(string(u.([]uint8))), string(u.([]uint8))))
+			url.PathEscape(u), u))
 	}
 	c.Writer.WriteString("</div><br>")
 	return content

@@ -13,11 +13,11 @@ func LogoutHandle(c *gin.Context) {
 	r, _ := redisLink()
 	newauthsecret := getrand()
 	userid := User.Get(c, "id")
-	oldauthsecret, _ := r.Hget("user:"+userid, "auth")
+	oldauthsecret, _ := r.HGet("user:"+userid, "auth")
 
-	r.Hset("user:"+userid, "auth", newauthsecret)
-	r.Hset("auths", newauthsecret, userid)
-	r.Hdel("auths", oldauthsecret)
+	r.HSet("user:"+userid, "auth", newauthsecret)
+	r.HSet("auths", newauthsecret, userid)
+	r.HDel("auths", oldauthsecret)
 
 	User.Del(c)
 

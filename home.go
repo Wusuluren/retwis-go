@@ -13,8 +13,8 @@ func HomeHandle(c *gin.Context) {
 
 	r, _ := redisLink()
 	userid := User.Get(c, "id")
-	followers, _ := r.Zcard("followers:" + userid)
-	following, _ := r.Zcard("following:" + userid)
+	followers, _ := r.ZCard("followers:" + userid)
+	following, _ := r.ZCard("following:" + userid)
 	body := fmt.Sprintf(`<div id="postform">
 <form method="POST" action="post">
 %s, what you are doing?
@@ -25,8 +25,8 @@ func HomeHandle(c *gin.Context) {
 </table>
 </form>
 <div id="homeinfobox">
-%s followers<br>
-%s following<br>
+%d followers<br>
+%d following<br>
 </div>
 </div>
 `, User.Get(c, "username"), followers, following)

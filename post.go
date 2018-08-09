@@ -16,17 +16,17 @@ func PostHandle(c *gin.Context) {
 	userid := User.Get(c, "id")
 	postid, _ := r.Incr("next_post_id")
 	status := strings.Replace(gt(c, "status"), "\n", " ", -1)
-	r.Hmset("post:"+postid, "user_id", userid, "time", time.Now().Unix(), "body", status)
-	followers, _ := r.Zrange("followers:"+userid, 0, -1)
+	r.HMSet("post:"+int64ToString(postid), "user_id", userid, "time", time.Now().Unix(), "body", status)
+	followers, _ := r.ZRange("followers:"+userid, 0, -1)
 	followers = append(followers, userid) //??
 
 	for _, fid := range followers {
-		r.Lpush("post:"+fid.(string), postid)
+		r.LPush("post:"+fid, int64ToString(postid))
 	}
 	// Push the post on the timeline, and trim the timeline to the
 	// newest 1000 elements.
-	r.Lpush("timeline", postid)
-	r.Ltrim("timeline", 0, 1000)
+	r.LPush("timeline", int64ToString(postid))
+	r.LTrim("timeline", 0, 1000)
 
 	tempRedirect(c, "index")
 }
