@@ -1,14 +1,33 @@
 package retwis
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"math/rand"
 	"net/url"
 	"strings"
 	"time"
 )
+
+type Config struct {
+	RedisUrl string `json:"redisUrl"`
+}
+
+var retwisConf Config
+
+func init() {
+	raw, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(raw, &retwisConf)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func getrand() int {
 	rand.Seed(time.Now().Unix())
@@ -50,7 +69,7 @@ func loadUserInfo(c *gin.Context, userid string) bool {
 
 func redisLink() (*Redis, error) {
 	r := &Redis{}
-	conn, err := redis.Dial("tcp", "192.168.116.129:6379")
+	conn, err := redis.Dial("tcp", retwisConf.RedisUrl)
 	r.Conn = conn
 	return r, err
 }
