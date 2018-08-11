@@ -36,6 +36,8 @@ func HomeHandle(c *gin.Context) {
 	} else {
 		start = stringToInt(gt(c, "start"))
 	}
+	c.Writer.WriteString(generateHeader(c) + body)
 	showUserPostsWithPagination(c, User.Get(c, "username"), userid, start, 10)
-	renderBody(c, body)
+	c.Writer.WriteString(generateFooter())
+	renderEnd(c)
 }

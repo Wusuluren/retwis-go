@@ -21,7 +21,7 @@ func PostHandle(c *gin.Context) {
 	followers = append(followers, userid) //??
 
 	for _, fid := range followers {
-		r.LPush("post:"+fid, int64ToString(postid))
+		r.LPush("posts:"+fid, int64ToString(postid))
 	}
 	// Push the post on the timeline, and trim the timeline to the
 	// newest 1000 elements.

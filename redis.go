@@ -2,8 +2,11 @@ package retwis
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"github.com/garyburd/redigo/redis"
+	"strconv"
+	"time"
 )
 
 type Redis struct {
@@ -57,6 +60,13 @@ func intfc2stringSlice(i interface{}) (val []string) {
 }
 
 // connection command
+
+func Open(addr string) (*Redis, error) {
+	r := &Redis{}
+	conn, err := redis.Dial("tcp", addr)
+	r.Conn = conn
+	return r, err
+}
 
 func (r *Redis) Ping() (string, error) {
 	var val string
@@ -635,7 +645,10 @@ func (r *Redis) ZRevRank(key, member string) (int64, error) {
 
 func (r *Redis) ZScore(key, member string) (float64, error) {
 	reply, err := r.Conn.Do("ZSCORE", key, member)
-	return intfc2float64(reply), err
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseFloat(intfc2string(reply), 64)
 }
 
 func (r *Redis) ZUnionStore(dst string, numkeys int, keys ...interface{}) error {
@@ -649,9 +662,25 @@ func (r *Redis) ZUnionStore(dst string, numkeys int, keys ...interface{}) error 
 
 // pubsub command
 
-func (r *Redis) PSubscribe(patterns ...interface{}) error {
-	_, err := r.Conn.Do("PSUBSCRIBE", patterns)
-	return err
+func (r *Redis) PSubscribe(patterns ...interface{}) (chan interface{}, context.CancelFunc, error) {
+	psc := redis.PubSubConn{r.Conn}
+	err := psc.PSubscribe(patterns)
+	if err != nil {
+		return nil, nil, err
+	}
+	c := make(chan interface{}, 10)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case c <- psc.Receive():
+			}
+		}
+	}()
+	time.Sleep(time.Second * 3)
+	return c, cancel, nil
 }
 
 func (r *Redis) PUnSubscribe(patterns ...interface{}) error {

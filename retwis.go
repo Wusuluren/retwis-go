@@ -81,7 +81,7 @@ func g(c *gin.Context, param string) interface{} {
 	if value := c.PostForm(param); value != "" {
 		return value
 	}
-	if value, exists := c.Get(param); exists {
+	if value, exists := c.GetQuery(param); exists {
 		return value
 	}
 	return nil
